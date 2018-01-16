@@ -7,7 +7,7 @@
 using namespace std;
 
 //void write_line(ofstream &file_ID, double distance, double angle, int quality)
-void write_line(ofstream &file_ID, float distance, float angle, char quality)
+void write_line(ofstream &file_ID, unsigned short distance, float angle, char quality)
 {
 	if (!file_ID)
 	{
@@ -19,5 +19,17 @@ void write_line(ofstream &file_ID, float distance, float angle, char quality)
 	file_ID.write((char*)&quality, sizeof(quality));
 	
 	//file_ID << distance << "\t" << angle << "\t" << quality << "\n";
+	//return FileState::FILE_SUCCESS;
+}
+
+void write_line_ASCII(ofstream &file_ID, unsigned short distance, float angle, char quality)
+{
+	if (!file_ID)
+	{
+		cout << "ERROR WRITING TO FILE!!!" << endl;
+		//return FileState::FILE_FAIL;
+	}
+
+	file_ID << distance << "\t" << angle << "\t" << static_cast<int>(quality) << "\r\n";
 	//return FileState::FILE_SUCCESS;
 }

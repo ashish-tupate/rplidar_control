@@ -186,12 +186,14 @@ int main(int argc, const char * argv[]) {
 
 	//////////////////////////////////////////////////////////////
     // TOM EDITS TO SAVE DATA
-	short no_of_scans = 100;	// Number of scans saved to a singe file
+	short no_of_scans = 100;		// Number of scans saved to a singe file
 	float angle;
-	float distance;
+	unsigned short distance;
 	float quality;
+	unsigned char quality_byte;		// One byte for quality data
 	bool write_to_file = true;
 	std::ofstream outf;
+	std::ofstream outf_ASCII;
 
 	// Make new directory for lidar data files, based on system date
 	//std::string data_path("./Data/");					// String holding directory path name
@@ -199,16 +201,14 @@ int main(int argc, const char * argv[]) {
 	std::string data_path;
 	data_path = "./" + date_time.substr(0, 10) + "/";	// Date directory
 	std::string file_path;
+	std::string file_path_ASCII;
+
 	boost::filesystem::path data_dir(data_path);		// Object holding directory for saving data
 	if (boost::filesystem::create_directory(data_dir))	// Create directory if not already present
 	{
 		std::cerr << "Directory Created: " << data_path << std::endl;
 	}
 
-	float holder_int;			// Holder for the integer part
-	unsigned short angle_int;	// Interger part of angle reading
-	unsigned short angle_dec;	// Fractional (decimal) part of angle reading
-	unsigned char quality_byte;	// One byte for quality data
 	////////////////////////////////////////////////////////////////
 
 	// fetech result and print it out...
@@ -218,12 +218,22 @@ int main(int argc, const char * argv[]) {
 		// Open new file for new scan
 		std::string file_name = get_datetime() + ".dat";	// File name definition
 		file_path = data_path + file_name;					// Path to file
-		if (write_to_file)  // Open file where data is written and add header
+
+		// ASCII tests
+		std::string file_name_ASCII = get_datetime() + "_ASCII.dat";
+		file_path_ASCII = data_path + file_name_ASCII;
+
+		// Open file where data is written and add header
+		if (write_to_file)  
 			{
 				//using namespace std;
 				outf.open(file_path, std::ios::binary);
-				outf << "distance(mm)\tangle(degrees)\tquality\n";
+				outf << "distance(mm)_" << sizeof(distance) << "B_\tangle(degrees)_" << sizeof(angle) << "B_\tquality_" << sizeof(quality_byte) << "B_\n";
 				//outf.close();
+
+				// ASCII TESTS
+				outf_ASCII.open(file_path_ASCII);
+				outf_ASCII << "distance(mm)_" << sizeof(distance) << "B_\tangle(degrees)_" << sizeof(angle) << "B_\tquality_" << sizeof(quality_byte) << "B_\n";
 			}
 		// ---------------------------------------------------------------
 
@@ -240,20 +250,13 @@ int main(int argc, const char * argv[]) {
 
 				for (int pos = 0; pos < (int)count; ++pos) {
 					angle = (nodes[pos].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) / 64.0f;
-					distance = nodes[pos].distance_q2 / 4.0f;
+					distance = static_cast<unsigned short>(nodes[pos].distance_q2 / 4.0f);
 					quality = nodes[pos].sync_quality >> RPLIDAR_RESP_MEASUREMENT_QUALITY_SHIFT;
 
 					quality_byte = static_cast<unsigned char>(quality);	// Cast quality to a 1 byte integer
 
-					// Maybe just leave angle as float rather than messing around with q9 conversion
-					// I was going to have a 9-bit integer and 15-bit decimal part, to use 3 bytes
-					// But might as well just use 4 bytes as floatand save like this
-					//angle_dec =	// Want to turn the decimal part into an integer
-					//angle_int = static_cast<unsigned short>(holder_int);	// Take integer part of angle
-
-
-					//if (write_to_file) {write_line(outf, distance, angle, quality);}  // Send data to be written
-					write_line(outf, distance, angle, quality_byte);	// Old version
+					write_line(outf, distance, angle, quality_byte);				// Write data
+					write_line_ASCII(outf_ASCII, distance, angle, quality_byte);	// Write data
 
 					/*	if (my_angle > 100 && my_angle < 101)
 					{
@@ -267,11 +270,13 @@ int main(int argc, const char * argv[]) {
 
 				
 			}
+
         }
 
 		// Closing file where data is written
 		if (write_to_file) {
 			outf.close();  // Close file after 100 scans have been taken
+			outf_ASCII.close();
 		}
 
         if (ctrl_c_pressed){ 
