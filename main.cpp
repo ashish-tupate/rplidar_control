@@ -186,35 +186,24 @@ int main(int argc, const char * argv[]) {
 
 	//////////////////////////////////////////////////////////////
     // TOM EDITS TO SAVE DATA
+	short no_of_scans = 100;	// Number of scans saved to a singe file
 	float angle;
 	float distance;
 	float quality;
 	bool write_to_file = true;
 	std::ofstream outf;
 
-	// ---------------------------------------------------------------
 	// Make new directory for lidar data files, based on system date
-	//std::string file_path("c:\\users\\tw9616\\documents\\phd\\ee placement\\lidar\\rplidar_a2m6\\vc2017 test\\sample.dat");
-
-	std::string data_path("./Data/");					// String holding directory path name
+	//std::string data_path("./Data/");					// String holding directory path name
+	std::string date_time = get_datetime();				// Get date_time string
+	std::string data_path;
+	data_path = "./" + date_time.substr(0, 10) + "/";	// Date directory
 	std::string file_path;
-	std::string file_name = get_datetime() + ".dat";	// File name definition
-	file_path = data_path + file_name;					// Path to file
-	
 	boost::filesystem::path data_dir(data_path);		// Object holding directory for saving data
 	if (boost::filesystem::create_directory(data_dir))	// Create directory if not already present
 	{
 		std::cerr << "Directory Created: " << data_path << std::endl;
 	}
-	// ---------------------------------------------------------------
-
-    if (write_to_file)  // Open file where data is written and add header
-		{
-			//using namespace std;
-			outf.open(file_path, std::ios::binary);
-			outf << "distance(mm)\tangle(degrees)\tquality\n";
-			//outf.close();
-		}
 
 	float holder_int;			// Holder for the integer part
 	unsigned short angle_int;	// Interger part of angle reading
@@ -224,48 +213,66 @@ int main(int argc, const char * argv[]) {
 
 	// fetech result and print it out...
 	while (1) {
-        rplidar_response_measurement_node_t nodes[360*2];
-        size_t   count = _countof(nodes);
 
-        op_result = drv->grabScanData(nodes, count);
+		// -------------------------------------------------------------------------------------------
+		// Open new file for new scan
+		std::string file_name = get_datetime() + ".dat";	// File name definition
+		file_path = data_path + file_name;					// Path to file
+		if (write_to_file)  // Open file where data is written and add header
+			{
+				//using namespace std;
+				outf.open(file_path, std::ios::binary);
+				outf << "distance(mm)\tangle(degrees)\tquality\n";
+				//outf.close();
+			}
+		// ---------------------------------------------------------------
 
-        if (IS_OK(op_result)) {
-            drv->ascendScanData(nodes, count);
-			
-            for (int pos = 0; pos < (int)count ; ++pos) {
-				angle = (nodes[pos].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) / 64.0f;
-				distance = nodes[pos].distance_q2 / 4.0f;
-				quality = nodes[pos].sync_quality >> RPLIDAR_RESP_MEASUREMENT_QUALITY_SHIFT;
+		
+		// Take 10 seconds of scans (or 100 scans as is set up) and save to file
+		for (int scan_num = 0; scan_num < no_of_scans; scan_num++) {
+			rplidar_response_measurement_node_t nodes[360*2];
+			size_t   count = _countof(nodes);
 
-				quality_byte = static_cast<unsigned char>(quality);	// Cast quality to a 1 byte integer
+			op_result = drv->grabScanData(nodes, count);
 
-				// Maybe just leave angle as float rather than messing around with q9 conversion
-				// I was going to have a 9-bit integer and 15-bit decimal part, to use 3 bytes
-				// But might as well just use 4 bytes as floatand save like this
-				//angle_dec =	// Want to turn the decimal part into an integer
-				//angle_int = static_cast<unsigned short>(holder_int);	// Take integer part of angle
+			if (IS_OK(op_result)) {
+				drv->ascendScanData(nodes, count);
+
+				for (int pos = 0; pos < (int)count; ++pos) {
+					angle = (nodes[pos].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) / 64.0f;
+					distance = nodes[pos].distance_q2 / 4.0f;
+					quality = nodes[pos].sync_quality >> RPLIDAR_RESP_MEASUREMENT_QUALITY_SHIFT;
+
+					quality_byte = static_cast<unsigned char>(quality);	// Cast quality to a 1 byte integer
+
+					// Maybe just leave angle as float rather than messing around with q9 conversion
+					// I was going to have a 9-bit integer and 15-bit decimal part, to use 3 bytes
+					// But might as well just use 4 bytes as floatand save like this
+					//angle_dec =	// Want to turn the decimal part into an integer
+					//angle_int = static_cast<unsigned short>(holder_int);	// Take integer part of angle
 
 
-				//if (write_to_file) {write_line(outf, distance, angle, quality);}  // Send data to be written
-				write_line(outf, distance, angle, quality_byte);	// Old version
+					//if (write_to_file) {write_line(outf, distance, angle, quality);}  // Send data to be written
+					write_line(outf, distance, angle, quality_byte);	// Old version
 
-				/*	if (my_angle > 100 && my_angle < 101)
-				{
-					printf("%s theta: %03.2f Dist: %08.2f Q: %d \n",
-						(nodes[pos].sync_quality & RPLIDAR_RESP_MEASUREMENT_SYNCBIT) ? "S " : "  ",
-						(nodes[pos].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) / 64.0f,
-						nodes[pos].distance_q2 / 4.0f,
-						nodes[pos].sync_quality >> RPLIDAR_RESP_MEASUREMENT_QUALITY_SHIFT);
-				}*/
-            }
+					/*	if (my_angle > 100 && my_angle < 101)
+					{
+						printf("%s theta: %03.2f Dist: %08.2f Q: %d \n",
+							(nodes[pos].sync_quality & RPLIDAR_RESP_MEASUREMENT_SYNCBIT) ? "S " : "  ",
+							(nodes[pos].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) / 64.0f,
+							nodes[pos].distance_q2 / 4.0f,
+							nodes[pos].sync_quality >> RPLIDAR_RESP_MEASUREMENT_QUALITY_SHIFT);
+					}*/
+				}
 
-			// Closing file where data is written
-			if (write_to_file) {
-				/*outf.close();
-				write_to_file = false;*/
-				outf.flush();  // Flush buffer to file after each full scan
+				
 			}
         }
+
+		// Closing file where data is written
+		if (write_to_file) {
+			outf.close();  // Close file after 100 scans have been taken
+		}
 
         if (ctrl_c_pressed){ 
 			break;
