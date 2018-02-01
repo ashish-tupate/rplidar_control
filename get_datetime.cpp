@@ -2,6 +2,7 @@
 #include <ctime>	// For time
 #include <string>	// For string manipulation
 #include <sstream>	// For conversion to string
+#include <chrono>	// For millisecond accuracy
 
 using namespace std;
 
@@ -48,6 +49,15 @@ string get_datetime() {
 	// Extract minute
 	second = static_cast<ostringstream*>(&(ostringstream() << gmtm->tm_sec))->str();
 	if (second.length() < 2) { second = "0" + second; }
+
+	//// Chrono time settings
+	//auto now = std::chrono::system_clock::now();
+	////auto time = std::chrono::system_clock::to_time_t(now);
+	//auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) -
+	//	std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch());
+
+	//std::cout << std::put_time(std::localtime(&time), "%H h %M m %S s ");
+	//std::cout << ms.count() << " ms" << std::endl;
 	
 	// Concatenate final return string
 	date_time_str = year + "-" + month + "-" + day + "_T" + hour + minute + second;

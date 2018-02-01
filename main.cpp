@@ -34,7 +34,7 @@
 #include <fstream>					//Tom's additions for writing to file
 #include <iostream>
 #include <math.h>
-#include "write_line.h"				//Writing line of lidar data to file
+#include "file_io.h"				//Read/write functions
 #include "get_datetime.h"			//Retrieving the system date/time string for filename
 
 // Use Boost library
@@ -102,9 +102,11 @@ void ctrlc(int)
 }
 
 int main(int argc, const char * argv[]) {
-    const char * opt_com_path = NULL;
+	const char * opt_com_path = NULL;
     _u32         opt_com_baudrate = 115200;
     u_result     op_result;
+
+	short motor_pwm = 660;  // Define pwm to set motor
 
     //printf("Ultra simple LIDAR data grabber for RPLIDAR.\n"
            //"Version: "RPLIDAR_SDK_VERSION"\n");
@@ -184,6 +186,14 @@ int main(int argc, const char * argv[]) {
     // start scan...
     drv->startScan();
 
+	// Set motor PWM
+	drv->setMotorPWM(motor_pwm);
+
+	float frequency = 0;		// Frequency value - gets edited by getFrequency()
+	bool is4kmode = true;		// Let it know if it is in 4k mode
+	bool inExpressMode = true;	// Whether we are uses express mode of not
+
+
 	//////////////////////////////////////////////////////////////
     // TOM EDITS TO SAVE DATA
 	short no_of_scans = 100;		// Number of scans saved to a singe file
@@ -208,6 +218,10 @@ int main(int argc, const char * argv[]) {
 	{
 		std::cerr << "Directory Created: " << data_path << std::endl;
 	}
+
+	// Socket setup
+	int port;
+	port = read_network_file();
 
 	////////////////////////////////////////////////////////////////
 
