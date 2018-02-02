@@ -38,7 +38,7 @@ void write_line_ASCII(ofstream &file_ID, unsigned short distance, float angle, c
 int read_network_file()
 {
 	string port_identifier("port=");				// Identifier that precedes port number in file
-	string file_path("./network/network_LSP.cfg");	// File path for socket connection
+	string file_path("./network/network_Lidar.cfg");	// File path for socket connection
 	ifstream net_file(file_path);					// Create file object
 
 	if (!net_file) { return FileState::FILE_FAIL; }

@@ -31,11 +31,12 @@
 
 // ---------------------------------------------------------------------------------
 // Tom's Additions
-#include <fstream>					//Tom's additions for writing to file
+#include <fstream>				//Tom's additions for writing to file
 #include <iostream>
 #include <math.h>
-#include "file_io.h"				//Read/write functions
-#include "get_datetime.h"			//Retrieving the system date/time string for filename
+#include "file_io.h"			//Read/write functions
+#include "get_datetime.h"		//Retrieving the system date/time string for filename
+#include "socket.h"				//Socket access functions
 
 // Use Boost library
 // In project properties >> Linker >> General >> Additional Library Directories 
@@ -102,6 +103,9 @@ void ctrlc(int)
 }
 
 int main(int argc, const char * argv[]) {
+	
+
+
 	const char * opt_com_path = NULL;
     _u32         opt_com_baudrate = 115200;
     u_result     op_result;
@@ -221,8 +225,11 @@ int main(int argc, const char * argv[]) {
 
 	// Socket setup
 	int port;
-	port = read_network_file();
-
+	SOCKET sock;
+	
+	port = read_network_file();		// Get port 
+	sock = open_sock(port);			// Open socket - connect to server
+	printf("Opened socket!\n");
 	////////////////////////////////////////////////////////////////
 
 	// fetech result and print it out...
@@ -269,8 +276,11 @@ int main(int argc, const char * argv[]) {
 
 					quality_byte = static_cast<unsigned char>(quality);	// Cast quality to a 1 byte integer
 
-					write_line(outf, distance, angle, quality_byte);				// Write data
-					write_line_ASCII(outf_ASCII, distance, angle, quality_byte);	// Write data
+					//write_line(outf, distance, angle, quality_byte);				// Write data
+					//write_line_ASCII(outf_ASCII, distance, angle, quality_byte);	// Write data
+
+					// Socket send data
+					send_data(sock, distance, angle, quality_byte);
 
 					/*	if (my_angle > 100 && my_angle < 101)
 					{
